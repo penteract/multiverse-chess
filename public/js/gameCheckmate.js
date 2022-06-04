@@ -24,12 +24,16 @@ class WorkerGame extends Game {
 		const gen = this.searchMate();
 		const loop = _ => {
 			const stopTime = performance.now() + 100;
+      let n = 0;
 			do {
+        n+=1
 				const r = gen.next();
+        console.log("iter",r)
 				if (r.done || r.value)
 					return postMessage(r.value);
-			} while (performance.now() < stopTime);
-			this.searchTimeout = setTimeout(loop, 0);
+			} while (/*(performance.now() < stopTime) &&*/ n<2000);
+			//this.searchTimeout = setTimeout(loop, 0);
+      console.log("timeout")
 		};
 		loop();
 	}
@@ -38,8 +42,16 @@ class WorkerGame extends Game {
 	}
 	*searchMate() {
     for(let c of search(this)){
-      yield c
+      if(!c) yield c
+      else{
+        let s = ""
+        for(let pt in c){
+          s+=c[pt].start+"->"+c[pt].end+";"
+        }
+        yield s
+      }
     }
+    yield "no escape found"
 	};
 }
 

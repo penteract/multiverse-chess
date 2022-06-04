@@ -3,7 +3,8 @@
 
 class Vec4 {
   // Note that the y coordinate is increases horizontally
-  // (white pieces begin at x coordinates 0 and 1, black pieces at 6 and 7)
+  // (white pieces begin at x coordinates 6 and 7, black pieces at 0 and 1)
+  // White Queen starts at (x=7,y=3), white King at (x=3,y=4)
 	constructor(x, y, l, t) {
 		if (x.x !== undefined) {
 			y = x.y;
@@ -31,7 +32,7 @@ class Vec4 {
 class Player {
 	constructor(game, side) {
 		this.game = game;
-		this.side = side;
+		this.side = side; // side 1 is white, side 0 is black
 		this.lastStartTime = undefined;
 		this.lastTurnTime = 0;
 		this.timeRunning = false;

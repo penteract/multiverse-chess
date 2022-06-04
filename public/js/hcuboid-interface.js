@@ -1,10 +1,10 @@
-  function getStart(mv) {
+function getStart(mv) {
     return mv.start;
 }
-  function getEnd(mv) {
+function getEnd(mv) {
     return mv.end;
 }
-  function getNewBoards(mv) {
+function getNewBoards(mv) {
     return mv.newBoards;
 }
 function v2c(v){
@@ -12,26 +12,26 @@ function v2c(v){
 }
 
 // Returns the l-index where a new timeline would be created
-  function getNewL(gs) {
+function getNewL(gs) {
     return gs.turn?gs.timelines[1].length:-gs.timelines[0].length-1;
 }
 // Returns the l-index of the timeline most recently created by the opponent
-  function getOpL(gs) {
+function getOpL(gs) {
     return gs.turn?-gs.timelines[0].length:gs.timelines[1].length-1;
 }
 // Returns the T-index of the last board on a timeline
-  function getEndT(gs, l) {
+function getEndT(gs, l) {
   let t = gs.getTimeline(l)
   return t.end;
 }
 //Returns a list of the moves originating from some timeline,
 // grouped by the piece that moves
-  function movesFrom(gs, l) {
+function movesFrom(gs, l) {
   let res = [];
   let tl = gs.getTimeline(l)
   for (let piece of getMovablePieces(tl.boards[tl.boards.length-1])) {
-    for (let move of piece.enumerateMoves()) { // don't worry about promotions
-      res.push(mkMove(gs, piece, move));
+    for (let dest of piece.enumerateMoves()) { // don't worry about promotions
+      res.push(mkMove(gs, piece, dest));
     }
   }
   return res;
@@ -73,7 +73,7 @@ function pieceToString(p){
   return p?p.type+"_"+p.side:" "
 }
 // return an array of the timelines on which it is the current player's turn
-  function getPlayableTimelines(gs) {
+function getPlayableTimelines(gs) {
   result = []
   for(let l = -gs.timelineCount[0]; l<= gs.timelineCount[1];l++){
     if ((gs.getTimeline(l).end+1)%2==gs.turn){
@@ -82,11 +82,11 @@ function pieceToString(p){
   }
   return result
 }
-/*  function applyMoves(gs, ms) {
+/*function applyMoves(gs, ms) {
     return {};
 }*/
 // applies fn to gs with ms
-  function withMoves(gs,ms,fn){
+function withMoves(gs,ms,fn){
   mvs = []
   for (let m of ms){
     //console.log(m)
@@ -100,12 +100,14 @@ function pieceToString(p){
   return result
 }
 // Returns a list of positions involved in a check
-  function getCheckPath(gs) {
+function getCheckPath(gs) {
 	for (let timelineDirection of gs.timelines){
 		for (let timeline of timelineDirection) {
 			const board = timeline.boards[timeline.boards.length - 1];
+      //console.log(board.turn,gs.turn)
 			if (board.turn != gs.turn){
 				for(let p of getMovablePieces(board)){
+          //console.log(pieceToString(p))
           let dir = undefined
           let ppos = new Vec4(p.x, p.y, p.board.l, p.board.t)
           let prevDest, path;
@@ -113,7 +115,7 @@ function pieceToString(p){
             if(!dir || !dest.sub(prevDest).equals(dir)){
               // Assume that directions are checked in a reasonable order
               dir = dest.sub(ppos)
-              path = [[v2c(dest),pieceToString(p)]]
+              path = [[v2c(ppos),pieceToString(p)]]
             }
             let dpiece = gs.getPiece(dest)
             path.push([v2c(dest),pieceToString(dpiece)])
@@ -134,7 +136,7 @@ function pieceToString(p){
 }*/
 
 // return true if the l and t coordinates of pos indicate a board which exists in state
-  function posExists(state, pos) {
+function posExists(state, pos) {
   let [l,t,x,y] = pos
   if (l < -state.timelineCount[0] || l > state.timelineCount[1]){
     return false
@@ -149,10 +151,10 @@ function getP(state, pos){
 }
 // return the piece at a particular position, or null if the position doesn't exist
 // may also crash on an illegal position (so long as you don't use the implementation of posExists above)
-  function getFromState(state, pos) {
+function getFromState(state, pos) {
     return pieceToString(getP(state, pos));
 }
 // return the piece on given position in a board
-  function getFrom2D(board, pos) {
+function getFrom2D(board, pos) {
     return board[pos[0]][pos[1]];
 }

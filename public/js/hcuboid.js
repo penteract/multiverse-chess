@@ -1,19 +1,39 @@
+function mvtoStr(mv){
+  return mv.start+"->"+mv.end+";"
+}
+function toStr(p){
+  c=toAction(p)
+  let s = ""
+  for(let pt in c){
+    s+=mvtoStr(c[pt])
+  }
+  return s
+}
+
 const TSp = 1; // timeline spacing
   function* search(state) {
+    console.log("starting hcuboid")
     s=""
     for (let k in state){
       s+=k;
     }
     //yield s
     let [wholeHC, hcs] = buildHCs(state);
+    //console.log(wholeHC,hcs)
     let sgn = getNewL(state) > 0 ? 1 : -1;
     while (hcs.length) {
+      //yield false;
+      //console.log("loop",hcs)
         let hc = hcs.pop();
         let p = takePoint(hc);
+        //console.log(p)
         if (p) {
+          //console.log(toStr2(p))
             let problem = findProblem(state, p, wholeHC);
             if (problem) {
                 hcs.push(...removeSlice(hc, problem));
+                //console.log("here")
+                yield false
             }
             else {
                 yield toAction(p, sgn);
@@ -35,6 +55,31 @@ const TSp = 1; // timeline spacing
     }
     return res;
 }
+  function toStr2(p, sgn) {
+    let ls = Object.keys(p); // yes, they're still strings, but it works
+    ls.sort((a, b) => a * sgn - b * sgn); // put new timelines at the end (this means that branches are created in the right order)
+    let res = "";
+    for (let l of ls) {
+      let [n, loc] = p[l];
+      res+="("+n+")"
+      if(loc.type=="physical"){
+        res+=mvtoStr(loc.move)
+      }
+      else if(loc.type=="arrive"){
+        res+="A"+mvtoStr(loc.move)
+      }
+      else if (loc.type=="pass"){
+        res+="P"+l+";"
+      }
+      else if(loc.type=="leave"){
+        res+="L"+loc.source+";"
+      }
+      else{
+        throw loc
+      }
+    }
+    return res;
+}
   function buildHCs(state) {
     let nonBranches = {};
     let arrivals = [{ type: "pass", lt: null }];
@@ -49,15 +94,19 @@ const TSp = 1; // timeline spacing
             let s = getStart(mv);
             let e = getEnd(mv);
             let nbs = getNewBoards(mv);
-            if (lt(e) == lt(s)) {
+            if (lt(e)+"" == lt(s)+"") {
                 nonBranches[l].push({ type: "physical", move: mv, board: nbs[s[0]] });
                 continue;
             }
-            if (s != lastLeave) {
+            if (s+"" != lastLeave+"") {
                 nonBranches[l].push({ type: "leave", source: s, board: nbs[s[0]] });
                 lastLeaveIdx = nonBranches[l].length - 1;
             }
-            arrivals.push({ type: "arrive", move: mv, board: nbs[e[0]], idx: lastLeaveIdx });
+            let otherBoard = Object.keys(nbs).filter(x=>x!=s[0])
+            if (otherBoard.length!=1){
+              throw "there should have been exactly 2 boards created"
+            }
+            arrivals.push({ type: "arrive", move: mv, board: nbs[otherBoard[0]], idx: lastLeaveIdx });
             if (nonBranches[e[0]] && getEndT(state, l) == e[1]) { // isPlayable(state,lt(e))){
                 nonBranches[e[0]].push(arrivals[arrivals.length - 1]);
             }
@@ -80,7 +129,8 @@ const TSp = 1; // timeline spacing
     // alternative: split into ceil((maxBranches+1)/2) hcs where some of the axes have both moves and passes
     //TODO: confirm that sharing references doesn't break things
     //(there may be parts that could be sped up by not sharing references)
-    let newArrs = arrivals.slice(1);
+  let newArrs = {}
+  for(let i=1;i<arrivals.length;i++) newArrs[i] = arrivals[i]
     for (let numActive = maxBranches; numActive >= 0; numActive--) {
         let l = newL;
         let cur = Object.assign({}, axes);
@@ -104,6 +154,19 @@ const TSp = 1; // timeline spacing
 // The meat of the search - where we find why there is a problem
 //  (e.g. why an action results in check)
   function findProblem(state, p, hc) {
+    let r;
+    if( r=jumpOrderConsistent(state, p, hc)){
+      //console.log("jumporder",r)
+      return r
+    }
+    if(r= testPresent(state, p, hc)){
+      //console.log("pres",r)
+      return r
+    }if(r=findChecks(state, p, hc)){
+      //console.log("check",r)
+      return r
+    }
+    return false
     return jumpOrderConsistent(state, p, hc) || testPresent(state, p, hc) || findChecks(state, p, hc);
 }
 // test whether there's a branch to a pass or a pair of branches that are created in the wrong order (implying a jump to a board that hasn't yet been played on, which cannot create a branch)
@@ -121,15 +184,17 @@ const TSp = 1; // timeline spacing
             }*/
             if ((cloned[0] in p)) {
                 let [n, targetLoc] = p[cloned[0]];
+                //console.log(p,targetLoc)
                 if (targetLoc.type == "pass" && targetLoc.lt[1] == cloned[1]) {
                     // branch involves moving to a pass. Ban any branches to the same place intersecting with a pass
+          //console.log("branch to pass")
                     let result = {};
                     result[cloned[0]] = [n];
                     result[l] = [];
                     for (let m in hc[l]) {
                         let loc = hc[l][m];
                         if (loc.type == "arrive" && getEnd(loc.move).slice(0, 2).every((e, ix) => e == cloned[ix])) {
-                            result[l].append(m);
+                            result[l].push(m);
                         }
                     }
                     return result;
@@ -138,6 +203,7 @@ const TSp = 1; // timeline spacing
             let source = lt(getStart(branchLoc.move));
             if (source.toString() in jumpMap) {
                 //some earlier branch jumped to the source of this one before that board had been played on
+        //console.log("branch order wrong")
                 let result = {};
                 result[l] = [];
                 for (let n in hc[l]) {
@@ -158,6 +224,7 @@ const TSp = 1; // timeline spacing
                             result[prevBranch].push(n);
                     }
                 }
+                return result
             }
             jumpMap[cloned.toString()] = l;
         }
@@ -174,7 +241,7 @@ const TSp = 1; // timeline spacing
     const active = Math.min(Math.abs(minL), Math.abs(maxL)) + TSp;
     let minT = Infinity;
     let minTl = undefined;
-    for (let l = sgn * Math.max(sgn * minL, -active); sgn * l < Math.min(sgn * maxL, active); l += sgn * TSp) {
+    for (let l = sgn * Math.max(sgn * minL, -active); sgn * l <= Math.min(sgn * maxL, active); l += sgn * TSp) {
         let t;
         if (sgn * l >= sgn * newL) {
             let lt = getLTFromLoc(p[l][1]);
@@ -229,16 +296,29 @@ function doesNotMoveT(loc, minT) {
         for (let [pos, piece] of check) { // We rely on the fact that any path crosses each timeline at most once
             if (!posExists(state, pos)) { // The position is added by some newly created board
                 //let piece = getFromState(changedState,pos) // get the piece or space involved in the check
-                result[pos[0]] = [];
-                let row = hc[pos[0]];
-                for (let ix in row) {
-                    let loc = row[ix];
-                    if (loc.type != "pass")
-                        if (getFrom2D(loc.board, [pos[2], pos[3]]) == piece)
-                            result[pos[0]].push(+ix);
+                if(pos[0] in result){
+                  let newRow = []
+                  for(let ix of result[pos[0]]){
+                    let loc=hc[pos[0]][ix]
+                    if(getFrom2D(loc.board, [pos[2],pos[3]])==piece){
+                      newRow.push(+ix)
+                    }
+                  }
+                  result[pos[0]] = newRow
+                }
+                else{
+                  result[pos[0]] = [];
+                  let row = hc[pos[0]];
+                  for (let ix in row) {
+                      let loc = row[ix];
+                      if (loc.type != "pass")
+                          if (getFrom2D(loc.board, [pos[2], pos[3]]) == piece)
+                              result[pos[0]].push(+ix);
+                  }
                 }
             }
         }
+        return result
     }
     else
         return null;
@@ -268,7 +348,7 @@ function doesNotMoveT(loc, minT) {
             let loc = hc[l][ix];
             if (loc.type == "arrive") {
                 let srcL = getStart(loc.move)[0];
-                if (!graph[l][srcL]) {
+                if (hc[srcL][loc.idx] && !graph[l][srcL]) {
                     graph[l][srcL] = [+ix, loc];
                     graph[srcL][l] = [loc.idx, hc[srcL][loc.idx]];
                     // this assumes that the corresponding leave is actually part of the hypercuboid
@@ -276,7 +356,9 @@ function doesNotMoveT(loc, minT) {
             }
         }
     }
+    //console.log("g",graph)
     let matching = findMatching(graph, mustInclude);
+    //console.log("sb",sameboard,"match",matching)
     if (matching === null)
         return null;
     return Object.assign(sameboard, matching);
