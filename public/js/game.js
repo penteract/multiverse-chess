@@ -2,6 +2,8 @@
 
 
 class Vec4 {
+  // Note that the y coordinate is increases horizontally
+  // (white pieces begin at x coordinates 0 and 1, black pieces at 6 and 7)
 	constructor(x, y, l, t) {
 		if (x.x !== undefined) {
 			y = x.y;
@@ -16,6 +18,9 @@ class Vec4 {
 	}
 	add(v) {
 		return new Vec4(this.x + v.x, this.y + v.y, this.l + v.l, this.t + v.t);
+	}
+	sub(v) {
+		return new Vec4(this.x - v.x, this.y - v.y, this.l - v.l, this.t - v.t);
 	}
 	equals(v) {
 		return v && this.x == v.x && this.y == v.y && this.l == v.l && this.t == v.t;
@@ -52,7 +57,7 @@ class Player {
 		if (this.game.options.time.start[this.side] == -1)
 			return;
 		this.timeRunning = true;
-		
+
 		this.lastGrace = this.game.options.time.grace || 0;
 		this.lastIncr = this.game.options.time.incr || 0;
 		for (let l = -Math.min(this.game.timelineCount[0], this.game.timelineCount[1] + 1); l <= Math.min(this.game.timelineCount[0] + 1, this.game.timelineCount[1]); l++)
@@ -123,7 +128,7 @@ class Board {
 		this.turn = turn;
 		this.pieces = new Array(8);
 		this.enPassantPawn = undefined;
-		
+
 		for (let i = 0; i < 8; i++)
 			this.pieces[i] = new Array(8);
 
@@ -185,7 +190,7 @@ class Board {
 					}
 		return this.imminentCheck;
 	}
-	
+
 	makeInactive() {
 		this.active = false;
 	}
@@ -292,7 +297,7 @@ class Move {
 			this.createdBoards = [this.sourceBoard];
 			if (this.isInterDimensionalMove)
 				this.createdBoards.push(this.targetBoard);
-			
+
 			const takePiece = this.targetBoard.pieces[targetPos.x][targetPos.y];
 			if (takePiece)
 				takePiece.remove();
@@ -331,12 +336,12 @@ class Game {
 		this.hoveredPiece = undefined;
 		this.selectedPiece = undefined;
 		this.ghostPiece = undefined;
-		
+
 		this.turn = 1;
 		this.localPlayer = localPlayer;
 		this.currentTurnMoves = [];
 		this.canSubmit = false;
-		
+
 		this.preInit();
 		this.players = [this.instantiatePlayer(0), this.instantiatePlayer(1)];
 		this.init();
@@ -354,7 +359,7 @@ class Game {
 		this.present = 0;
 		this.getTimeline(0).setBoard(0, this.instantiateBoard(0, this.present, this.turn, true));
 		this.arrowCount = 0;
-		
+
 		if (options.moves) {
 			for (let i = 0; i < options.moves.length - 1; i++) {
 				this.executeMove("submit", options.moves[i], 0, true);
@@ -366,7 +371,7 @@ class Game {
 			}
 		}
 		this.findChecks();
-		
+
 		if (options.runningClocks)
 			this.players[this.turn].startTime(options.runningClockGraceTime, options.runningClockTime);
 	}
@@ -397,10 +402,10 @@ class Game {
 			this.players[winner].setWinner();
 		this.checkSubmitAvailable();
 	}
-	
+
 	executeMove(action, newCurrentMoves, timeTaken, fastForward) {
 		// console.log("game-action", action, newCurrentMoves);
-			
+
 		newCurrentMoves = newCurrentMoves.map(m => (m.l !== undefined ? m : { from: new Vec4(m.from), to: new Vec4(m.to), promote: m.promote }));
 		const existingMoves = new Array(newCurrentMoves.length).fill(false);
 		const deletedMoves = [];
@@ -410,7 +415,7 @@ class Game {
 			for (let i = 0; i < newCurrentMoves.length; i++) {
 				const newMove = newCurrentMoves[i];
 				if (move.l === undefined ? move.from.equals(newMove.from) && move.to.equals(newMove.to) : move.l === newMove.l) {
-					existingMoves[i] = move; 
+					existingMoves[i] = move;
 					continue nextExistingMove;
 				}
 			}
@@ -561,7 +566,7 @@ class Game {
 									}
 								}
 			}
-		return results;					
+		return results;
 	}
 
 	applyMove(move, fastForward) {
@@ -570,7 +575,7 @@ class Game {
 		if (!fastForward)
 			this.findChecks();
 	}
-	
+
 	move(target, promotionTo) {
 		if (target.board.turn != this.selectedPiece.side)
 			throw Error("tried to make move to opponent side..");

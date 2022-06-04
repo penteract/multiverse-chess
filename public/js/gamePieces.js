@@ -50,7 +50,7 @@ const Piece = BasePiece => class extends BasePiece {
 		const piece = this.game.getPiece(pos, incrBoardNum);
 		if (piece === false)
 			return 0;
-			
+
 		if (piece)
 			return piece.side == this.side ? 0 : 2;
 		return 1;
