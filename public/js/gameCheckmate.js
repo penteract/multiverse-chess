@@ -7,9 +7,9 @@
 // Not sure if this idea is solid enough for real world. It can always be ran on the server too just in case, probably best to do this with a timelimit.
 
 self.importScripts("/js/gamePieces.js" + self.location.search
-									,"/js/game.js" + self.location.search
-									,"/js/hcuboid.js" + self.location.search
-									,"./hcuboid-interface.js" + self.location.search )
+                  ,"/js/game.js" + self.location.search
+                  ,"/js/hcuboid.js" + self.location.search
+                  ,"./hcuboid-interface.js" + self.location.search )
 
 
 function c2v(c){
