@@ -25,15 +25,21 @@ class WorkerGame extends Game {
 		const loop = _ => {
 			const stopTime = performance.now() + 100;
       let n = 0;
+      let k = 0;
+      let known = [];
 			do {
         n+=1
 				const r = gen.next();
-        console.log("iter",r)
-				if (r.done || r.value)
-					return postMessage(r.value);
-			} while (/*(performance.now() < stopTime) &&*/ n<2000);
+        //console.log("iter",r)
+        if(r.value){
+          k+=1
+          known.push(r.value)
+        }
+				if (k>=1000 || r.done)
+					return postMessage(known);
+			} while (/*(performance.now() < stopTime) &&*/ n<2000000);
 			//this.searchTimeout = setTimeout(loop, 0);
-      console.log("timeout")
+      console.log("timeout",k)
 		};
 		loop();
 	}
@@ -44,14 +50,17 @@ class WorkerGame extends Game {
     for(let c of search(this)){
       if(!c) yield c
       else{
-        let s = ""
+        yield c
+        if(false){
+        let s = "["
         for(let pt in c){
-          s+=c[pt].start+"->"+c[pt].end+";"
+          s+="[["+c[pt].start+"],["+c[pt].end+"]],"
         }
-        yield s
+        yield (s+"]")
+        }
       }
     }
-    yield "no escape found"
+    //yield "no escape found"
 	};
 }
 

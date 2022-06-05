@@ -1,8 +1,8 @@
 function mvtoStr(mv){
   return mv.start+"->"+mv.end+";"
 }
-function toStr(p){
-  c=toAction(p)
+function toStr(p,sgn){
+  c=toAction(p,sgn)
   let s = ""
   for(let pt in c){
     s+=mvtoStr(c[pt])
@@ -19,7 +19,7 @@ const TSp = 1; // timeline spacing
     }
     //yield s
     let [wholeHC, hcs] = buildHCs(state);
-    //console.log(wholeHC,hcs)
+    console.log(wholeHC,hcs)
     let sgn = getNewL(state) > 0 ? 1 : -1;
     while (hcs.length) {
       //yield false;
@@ -36,11 +36,23 @@ const TSp = 1; // timeline spacing
                 yield false
             }
             else {
-                yield toAction(p, sgn);
+              yield (printIxs(p,sgn)+toStr(p, sgn));
+                //yield toAction(p, sgn);
                 hcs.push(...removePoint(hc, p));
             }
         }
     }
+}
+  function printIxs(p, sgn) {
+    let ls = Object.keys(p); // yes, they're still strings, but it works
+    ls.sort((a, b) => a * sgn - b * sgn); // put new timelines at the end (this means that branches are created in the right order)
+    let res = "";
+    for (let l of ls) {
+        ;
+        let [n, loc] = p[l];
+        res+="("+l+":"+n+")"
+    }
+    return res;
 }
   function toAction(p, sgn) {
     let ls = Object.keys(p); // yes, they're still strings, but it works
@@ -101,13 +113,14 @@ const TSp = 1; // timeline spacing
             if (s+"" != lastLeave+"") {
                 nonBranches[l].push({ type: "leave", source: s, board: nbs[s[0]] });
                 lastLeaveIdx = nonBranches[l].length - 1;
+                lastLeave = s
             }
             let otherBoard = Object.keys(nbs).filter(x=>x!=s[0])
             if (otherBoard.length!=1){
               throw "there should have been exactly 2 boards created"
             }
             arrivals.push({ type: "arrive", move: mv, board: nbs[otherBoard[0]], idx: lastLeaveIdx });
-            if (nonBranches[e[0]] && getEndT(state, l) == e[1]) { // isPlayable(state,lt(e))){
+            if (nonBranches[e[0]] && getEndT(state, e[0]) == e[1]) { // isPlayable(state,lt(e))){
                 nonBranches[e[0]].push(arrivals[arrivals.length - 1]);
             }
         }
@@ -133,11 +146,11 @@ const TSp = 1; // timeline spacing
   for(let i=1;i<arrivals.length;i++) newArrs[i] = arrivals[i]
     for (let numActive = maxBranches; numActive >= 0; numActive--) {
         let l = newL;
-        let cur = Object.assign({}, axes);
         for (let i = 0; i < maxBranches; i++) {
             axes[l] = (i >= numActive) ? [arrivals[0]] : newArrs;
             l += newL > 0 ? 1 : -1;
         }
+        let cur = Object.assign({}, axes);
         hcs.push(cur);
     }
     let l = newL;
