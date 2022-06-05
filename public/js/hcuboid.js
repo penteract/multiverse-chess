@@ -1,58 +1,22 @@
-function mvtoStr(mv){
-  return mv.start+"->"+mv.end+";"
-}
-function toStr(p,sgn){
-  c=toAction(p,sgn)
-  let s = ""
-  for(let pt in c){
-    s+=mvtoStr(c[pt])
-  }
-  return s
-}
-
 const TSp = 1; // timeline spacing
   function* search(state) {
-    console.log("starting hcuboid")
-    s=""
-    for (let k in state){
-      s+=k;
-    }
-    //yield s
     let [wholeHC, hcs] = buildHCs(state);
-    console.log(wholeHC,hcs)
     let sgn = getNewL(state) > 0 ? 1 : -1;
     while (hcs.length) {
-      //yield false;
-      //console.log("loop",hcs)
         let hc = hcs.pop();
         let p = takePoint(hc);
-        //console.log(p)
         if (p) {
-          //console.log(toStr2(p))
             let problem = findProblem(state, p, wholeHC);
             if (problem) {
                 hcs.push(...removeSlice(hc, problem));
-                //console.log("here")
                 yield false
             }
             else {
-              yield (printIxs(p,sgn)+toStr(p, sgn));
-                //yield toAction(p, sgn);
+              yield (toAction(p,sgn));
                 hcs.push(...removePoint(hc, p));
             }
         }
     }
-}
-  function printIxs(p, sgn) {
-    let ls = Object.keys(p); // yes, they're still strings, but it works
-    ls.sort((a, b) => a * sgn - b * sgn); // put new timelines at the end (this means that branches are created in the right order)
-    let res = "";
-    for (let l of ls) {
-        ;
-        let [n, loc] = p[l];
-        res+="("+l+":"+n+")"
-    }
-    return res;
 }
   function toAction(p, sgn) {
     let ls = Object.keys(p); // yes, they're still strings, but it works
@@ -167,19 +131,6 @@ const TSp = 1; // timeline spacing
 // The meat of the search - where we find why there is a problem
 //  (e.g. why an action results in check)
   function findProblem(state, p, hc) {
-    let r;
-    if( r=jumpOrderConsistent(state, p, hc)){
-      //console.log("jumporder",r)
-      return r
-    }
-    if(r= testPresent(state, p, hc)){
-      //console.log("pres",r)
-      return r
-    }if(r=findChecks(state, p, hc)){
-      //console.log("check",r)
-      return r
-    }
-    return false
     return jumpOrderConsistent(state, p, hc) || testPresent(state, p, hc) || findChecks(state, p, hc);
 }
 // test whether there's a branch to a pass or a pair of branches that are created in the wrong order (implying a jump to a board that hasn't yet been played on, which cannot create a branch)
@@ -192,15 +143,10 @@ const TSp = 1; // timeline spacing
         if (branchLoc.type == "arrive") { // branch
             let cloned = lt(getEnd(branchLoc.move));
             let targetLoc;
-            /*if((end[0] in p) && ((targetLoc=p[end[0]][1]).type=="pass") && targetLoc.lt[1]==end[1] ){
-              //why doesn't that typecheck?
-            }*/
             if ((cloned[0] in p)) {
                 let [n, targetLoc] = p[cloned[0]];
-                //console.log(p,targetLoc)
                 if (targetLoc.type == "pass" && targetLoc.lt[1] == cloned[1]) {
                     // branch involves moving to a pass. Ban any branches to the same place intersecting with a pass
-          //console.log("branch to pass")
                     let result = {};
                     result[cloned[0]] = [n];
                     result[l] = [];
@@ -216,7 +162,6 @@ const TSp = 1; // timeline spacing
             let source = lt(getStart(branchLoc.move));
             if (source.toString() in jumpMap) {
                 //some earlier branch jumped to the source of this one before that board had been played on
-        //console.log("branch order wrong")
                 let result = {};
                 result[l] = [];
                 for (let n in hc[l]) {
@@ -336,10 +281,6 @@ function doesNotMoveT(loc, minT) {
     else
         return null;
 }
-/*  function applyPoint(state:GameState, p:Point) : GameState{
-  let sgn = getNewL(state)>0?1:-1
-  return applyMoves(state, toAction(p,sgn))
-}*/
   function takePoint(hc) {
     let sameboard = {};
     let graph = {};
@@ -369,9 +310,7 @@ function doesNotMoveT(loc, minT) {
             }
         }
     }
-    //console.log("g",graph)
     let matching = findMatching(graph, mustInclude);
-    //console.log("sb",sameboard,"match",matching)
     if (matching === null)
         return null;
     return Object.assign(sameboard, matching);
@@ -451,7 +390,6 @@ function doesNotMoveT(loc, minT) {
     }
     let mtch = {};
     for (let n of include) { // make sure the matching includes all of these by finding augmenting paths
-        //console.log(n)
         if (n in mtch)
             continue;
         let seen = {}; //nodes seen at an odd distance from n (and n itself)
@@ -462,7 +400,6 @@ function doesNotMoveT(loc, minT) {
         let cur = ms.map(m => ({ pair: [n, m], next: null }));
         let augment = null;
         find_augment: while (cur.length != 0) {
-            //console.log("start",seen,cur)
             let next = []; // next depth of bfs
             for (let p of cur) {
                 let u = p.pair[1];
@@ -486,7 +423,6 @@ function doesNotMoveT(loc, minT) {
             }
             cur = next;
         }
-        //console.log(n,"aug",augment.drop,sh(augment.path))
         if (augment === null) {
             return null;
         }
