@@ -1,5 +1,6 @@
+
 const TSp = 1; // timeline spacing
-  function* search(state) {
+function* search(state) {
     let [wholeHC, hcs] = buildHCs(state);
     let sgn = getNewL(state) > 0 ? 1 : -1;
     while (hcs.length) {
@@ -9,16 +10,16 @@ const TSp = 1; // timeline spacing
             let problem = findProblem(state, p, wholeHC);
             if (problem) {
                 hcs.push(...removeSlice(hc, problem));
-                yield false
+                yield false;
             }
             else {
-              yield (toAction(p,sgn));
+                yield toAction(p, sgn);
                 hcs.push(...removePoint(hc, p));
             }
         }
     }
 }
-  function toAction(p, sgn) {
+function toAction(p, sgn) {
     let ls = Object.keys(p); // yes, they're still strings, but it works
     ls.sort((a, b) => a * sgn - b * sgn); // put new timelines at the end (this means that branches are created in the right order)
     let res = [];
@@ -31,7 +32,7 @@ const TSp = 1; // timeline spacing
     }
     return res;
 }
-  function buildHCs(state) {
+function buildHCs(state) {
     let nonBranches = {};
     let arrivals = [{ type: "pass", lt: null }];
     for (let l of getPlayableTimelines(state)) {
@@ -45,18 +46,18 @@ const TSp = 1; // timeline spacing
             let s = getStart(mv);
             let e = getEnd(mv);
             let nbs = getNewBoards(mv);
-            if (lt(e)+"" == lt(s)+"") {
+            if (lt(e) + "" == lt(s) + "") {
                 nonBranches[l].push({ type: "physical", move: mv, board: nbs[s[0]] });
                 continue;
             }
-            if (s+"" != lastLeave+"") {
+            if (s + "" != lastLeave + "") {
                 nonBranches[l].push({ type: "leave", source: s, board: nbs[s[0]] });
                 lastLeaveIdx = nonBranches[l].length - 1;
-                lastLeave = s
+                lastLeave = s;
             }
-            let otherBoard = Object.keys(nbs).filter(x=>x!=s[0])
-            if (otherBoard.length!=1){
-              throw "there should have been exactly 2 boards created"
+            let otherBoard = Object.keys(nbs).filter(x => x != s[0] + "");
+            if (otherBoard.length != 1) {
+                throw "there should have been exactly 2 boards created";
             }
             arrivals.push({ type: "arrive", move: mv, board: nbs[otherBoard[0]], idx: lastLeaveIdx });
             if (nonBranches[e[0]] && getEndT(state, e[0]) == e[1]) { // isPlayable(state,lt(e))){
@@ -81,8 +82,9 @@ const TSp = 1; // timeline spacing
     // alternative: split into ceil((maxBranches+1)/2) hcs where some of the axes have both moves and passes
     //TODO: confirm that sharing references doesn't break things
     //(there may be parts that could be sped up by not sharing references)
-  let newArrs = {}
-  for(let i=1;i<arrivals.length;i++) newArrs[i] = arrivals[i]
+    let newArrs = {};
+    for (let i = 1; i < arrivals.length; i++)
+        newArrs[i] = arrivals[i];
     for (let numActive = maxBranches; numActive >= 0; numActive--) {
         let l = newL;
         for (let i = 0; i < maxBranches; i++) {
@@ -100,16 +102,16 @@ const TSp = 1; // timeline spacing
     return [axes, hcs];
 }
 /*
-  type HC = Record<LIndex,Record<number,AxisLoc>>
-  type Point = Record<LIndex,[number,AxisLoc]>
-  type Slice = Record<LIndex,number[]>*/
+type HC = Record<LIndex,Record<number,AxisLoc>>
+type Point = Record<LIndex,[number,AxisLoc]>
+type Slice = Record<LIndex,number[]>*/
 // The meat of the search - where we find why there is a problem
 //  (e.g. why an action results in check)
-  function findProblem(state, p, hc) {
+function findProblem(state, p, hc) {
     return jumpOrderConsistent(state, p, hc) || testPresent(state, p, hc) || findChecks(state, p, hc);
 }
 // test whether there's a branch to a pass or a pair of branches that are created in the wrong order (implying a jump to a board that hasn't yet been played on, which cannot create a branch)
-  function jumpOrderConsistent(state, p, hc) {
+function jumpOrderConsistent(state, p, hc) {
     let newL = getNewL(state);
     let sgn = newL > 0 ? 1 : -1;
     let jumpMap = {}; // jumpMap["l1,t1"]==l2 means that p[l2] is a jump to the 2D board at [l1,t1]
@@ -156,14 +158,14 @@ const TSp = 1; // timeline spacing
                             result[prevBranch].push(n);
                     }
                 }
-                return result
+                return result;
             }
             jumpMap[cloned.toString()] = l;
         }
     }
     return null;
 }
-  function testPresent(state, p, hc) {
+function testPresent(state, p, hc) {
     const newL = getNewL(state);
     const sgn = newL > 0 ? 1 : -1;
     // the L-index of the timeline most recently created by the opponent
@@ -218,7 +220,7 @@ const TSp = 1; // timeline spacing
 function doesNotMoveT(loc, minT) {
     return loc.type == "pass" || getLTFromLoc(loc)[1] >= minT;
 }
-  function findChecks(state, p, hc) {
+function findChecks(state, p, hc) {
     //We could use a bit of mutability here and undo before returning
     let check = withMoves(state, toAction(p, getNewL(state) > 0 ? 1 : -1), getCheckPath);
     //let changedState = applyPoint(state,p)
@@ -228,34 +230,38 @@ function doesNotMoveT(loc, minT) {
         for (let [pos, piece] of check) { // We rely on the fact that any path crosses each timeline at most once
             if (!posExists(state, pos)) { // The position is added by some newly created board
                 //let piece = getFromState(changedState,pos) // get the piece or space involved in the check
-                if(pos[0] in result){
-                  let newRow = []
-                  for(let ix of result[pos[0]]){
-                    let loc=hc[pos[0]][ix]
-                    if(getFrom2D(loc.board, [pos[2],pos[3]])==piece){
-                      newRow.push(+ix)
+                if (pos[0] in result) {
+                    let newRow = [];
+                    for (let ix of result[pos[0]]) {
+                        let loc = hc[pos[0]][ix];
+                        if (loc.type != "pass" && getFrom2D(loc.board, [pos[2], pos[3]]) == piece) {
+                            newRow.push(+ix);
+                        }
                     }
-                  }
-                  result[pos[0]] = newRow
+                    result[pos[0]] = newRow;
                 }
-                else{
-                  result[pos[0]] = [];
-                  let row = hc[pos[0]];
-                  for (let ix in row) {
-                      let loc = row[ix];
-                      if (loc.type != "pass")
-                          if (getFrom2D(loc.board, [pos[2], pos[3]]) == piece)
-                              result[pos[0]].push(+ix);
-                  }
+                else {
+                    result[pos[0]] = [];
+                    let row = hc[pos[0]];
+                    for (let ix in row) {
+                        let loc = row[ix];
+                        if (loc.type != "pass")
+                            if (getFrom2D(loc.board, [pos[2], pos[3]]) == piece)
+                                result[pos[0]].push(+ix);
+                    }
                 }
             }
         }
-        return result
+        return result;
     }
     else
         return null;
 }
-  function takePoint(hc) {
+/*function applyPoint(state:GameState, p:Point) : GameState{
+  let sgn = getNewL(state)>0?1:-1
+  return applyMoves(state, toAction(p,sgn))
+}*/
+function takePoint(hc) {
     let sameboard = {};
     let graph = {};
     let mustInclude = [];
@@ -276,6 +282,7 @@ function doesNotMoveT(loc, minT) {
             let loc = hc[l][ix];
             if (loc.type == "arrive") {
                 let srcL = getStart(loc.move)[0];
+                // I think that checking that hc[srcL][loc.idx] exists is done by 'sanity' in the Haskell code
                 if (hc[srcL][loc.idx] && !graph[l][srcL]) {
                     graph[l][srcL] = [+ix, loc];
                     graph[srcL][l] = [loc.idx, hc[srcL][loc.idx]];
@@ -290,7 +297,7 @@ function doesNotMoveT(loc, minT) {
     return Object.assign(sameboard, matching);
 }
 //Split a hypercuboid into pieces with a slice removed
-  function removeSlice(hc, slice) {
+function removeSlice(hc, slice) {
     //  to understand this read removePoint first, and think of a cube
     let res = [];
     let altSlice = {}; // will describe the subset of slice that intersects hc
@@ -316,7 +323,7 @@ function doesNotMoveT(loc, minT) {
     return res;
 }
 //Split a hypercuboid into pieces with a point removed
-  function removePoint(hc, point) {
+function removePoint(hc, point) {
     // Think of a cube with a small cube in the lower front left corner removed.
     // We can cut this shape into 3 cuboids -
     // First we take a large cuboid off the top (leaving a fairly flat shape)
@@ -334,11 +341,11 @@ function doesNotMoveT(loc, minT) {
     // put the larger pieces at the front to reduce memory usage
     return res;
 }
-//utility export functions
-  function lt(c) {
+//utility functions
+function lt(c) {
     return [c[0], c[1]];
 }
-  function getLTFromLoc(loc) {
+function getLTFromLoc(loc) {
     switch (loc.type) {
         case "physical":
             return lt(getStart(loc.move));
@@ -356,7 +363,7 @@ function doesNotMoveT(loc, minT) {
 // augmenting paths. If we don't find such a path, there is no acceptable matching,
 // if we do find one, we can include the node.
 // https://en.wikipedia.org/wiki/Berge%27s_theorem applies here, adapted appropriately
-  function findMatching(g, include) {
+function findMatching(g, include) {
     let ns = Object.keys(g);
     let mustInc = {}; // Set of nodes that must be included
     for (let n of include) {
