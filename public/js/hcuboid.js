@@ -31,31 +31,6 @@ const TSp = 1; // timeline spacing
     }
     return res;
 }
-  function toStr2(p, sgn) {
-    let ls = Object.keys(p); // yes, they're still strings, but it works
-    ls.sort((a, b) => a * sgn - b * sgn); // put new timelines at the end (this means that branches are created in the right order)
-    let res = "";
-    for (let l of ls) {
-      let [n, loc] = p[l];
-      res+="("+n+")"
-      if(loc.type=="physical"){
-        res+=mvtoStr(loc.move)
-      }
-      else if(loc.type=="arrive"){
-        res+="A"+mvtoStr(loc.move)
-      }
-      else if (loc.type=="pass"){
-        res+="P"+l+";"
-      }
-      else if(loc.type=="leave"){
-        res+="L"+loc.source+";"
-      }
-      else{
-        throw loc
-      }
-    }
-    return res;
-}
   function buildHCs(state) {
     let nonBranches = {};
     let arrivals = [{ type: "pass", lt: null }];
@@ -142,7 +117,6 @@ const TSp = 1; // timeline spacing
         let [_, branchLoc] = p[l];
         if (branchLoc.type == "arrive") { // branch
             let cloned = lt(getEnd(branchLoc.move));
-            let targetLoc;
             if ((cloned[0] in p)) {
                 let [n, targetLoc] = p[cloned[0]];
                 if (targetLoc.type == "pass" && targetLoc.lt[1] == cloned[1]) {
